@@ -4,34 +4,167 @@
     <meta charset="UTF-8">
     <title>Wallet</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: black;
+            color: #00FF00;
+            margin: 0;
+            padding: 0;
+        }
+
+        #container {
+            width: 60%;
+            margin: 20px auto;
+            background-color: black;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2, p {
+            text-align: center;
+        }
+
+        #wallet_details, #send_money {
+            margin-bottom: 30px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #00FF00;
+            background-color: black;
+            color: #00FF00;
+        }
+
+        #reload_wallet, #send_money_button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: #00FF00;
+            color: black;
+            cursor: pointer;
+        }
+
+        #wallet_amount {
+            font-size: 24px;
+            text-align: center;
+            color: #00FF00;
+        }
+
+        .header-style {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00FF00;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+    <script>
+        $(function () {
+            $.ajax({
+                url: '/wallet',
+                type: 'POST',
+                success: function (response) {
+                    $('#public_key').val(response['public_key']);
+                    $('#private_key').val(response['private_key']);
+                    $('#blockchain_address').val(response['blockchain_address']);
+                    console.info(response);
+                },
+                error: function(error) {
+                    console.error(error);
+                }
+            });
+
+            $('#send_money_button').click(function () {
+                let confirm_text = 'Are you sure to send?';
+                let confirm_result = confirm(confirm_text);
+                if (confirm_result !== true) {
+                    alert('Canceled');
+                    return
+                }
+
+                let transaction_data = {
+                    'sender_private_key': $('#private_key').val(),
+                    'sender_blockchain_address': $('#blockchain_address').val(),
+                    'recipient_blockchain_address': $('#recipient_blockchain_address').val(),
+                    'sender_public_key': $('#public_key').val(),
+                    'value': $('#send_amount').val(),
+                };
+
+                $.ajax({
+                    url: '/transaction',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(transaction_data),
+                    success: function (response) {
+                        console.info(response);
+                        alert('Send success');
+                    },
+                    error: function (response) {
+                        console.error(response);
+                        alert('Send failed');
+                    }
+                })
+            })
+
+            function reload_amount() {
+                let data = {'blockchain_address': $('#blockchain_address').val()}
+                $.ajax({
+                    url: '/wallet/amount',
+                    type: 'GET',
+                    data: data,
+                    success: function (response) {
+                        let amount = response['amount'];
+                        $('#wallet_amount').text("Wallet Amount: " + amount);
+                        console.info(amount)
+                    },
+                    error: function(error) {
+                        console.error(error)
+                    }
+                })
+            }
+
+            setInterval(reload_amount, 3000)
+
+        })
+
+    </script>
 </head>
 <body>
 
-<div>
-    <h1>Wallet</h1>
-    <div id="wallet_amount">0</div>
-    <button id="reload_wallet">Reload Wallet</button>
+<div id="container">
 
-    <p>Public  Key</p>
-    <textarea id="public_key" rows="2" cols="100"></textarea>
-
-    <p>Private  Key</p>
-    <textarea id="private_key" rows="1" cols="100"></textarea>
-
-    <p>Blockchain Address</p>
-    <textarea id="blockchain_address" rows="1" cols="100"></textarea>
-
-</div>
-
-<div>
-    <h1>Send Money</h1>
-    <div>
-        Address: <input id="recipient_blockchain_address" size="100" type="text">
-        <br>
-        Amount: <input id="send_amount" type="text">
-        <br>
-        <button id="send_money_button">Send</button>
+    <div id="wallet_details">
+        <h1>Secure Lightweight Wallet for IoT</h1>
+        <div id="wallet_amount">0</div>
+        <p class="header-style">Public Key</p>
+        <textarea id="public_key" rows="2" cols="100"></textarea>
+        <p class="header-style">Private Key</p>
+        <textarea id="private_key" rows="1" cols="100"></textarea>
+        <p class="header-style">Blockchain Address</p>
+        <textarea id="blockchain_address" rows="1" cols="100"></textarea>
+        <button id="reload_wallet">Reload Wallet</button>
     </div>
+
+    <div id="send_money">
+        <h2>Send Money</h2>
+        <div>
+            Address: <input id="recipient_blockchain_address" size="100" type="text">
+            <br>
+            Amount: <input id="send_amount" type="text">
+            <br>
+            <button id="send_money_button">Send</button>
+        </div>
+    </div>
+
 </div>
 
 </body>
